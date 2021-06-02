@@ -12,6 +12,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 import shared
 
+# world_size = torch.cuda.device_count()
+world_size = 2
+
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12355'
@@ -21,7 +24,6 @@ def setup(rank, world_size):
 
 def main(rank):
 
-    world_size = torch.cuda.device_count()
     setup(rank, world_size=world_size)
 
     my_net    = shared.MyNet().to(rank)
@@ -47,4 +49,4 @@ def main(rank):
     print("rank:", rank, "my_net.w: ", my_net.w.data)
 
 if __name__ == "__main__":
-    mp.spawn(main, args=(), nprocs=torch.cuda.device_count(), join=True)
+    mp.spawn(main, args=(), nprocs=world_size, join=True)
