@@ -1,40 +1,50 @@
+import os
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
 import torch.multiprocessing as mp
+import torch.distributed as dist
+from torch.utils.data.distributed import DistributedSampler
+from torch.utils.data import DataLoader
+from torch.nn.parallel import DistributedDataParallel as DDP
 
-class MyNet(nn.Module):
-    def __init__(self):
-        super(MyNet, self).__init__()
+import shared
 
-        self.w = nn.Parameter(torch.ones(1))
+def setup(rank, world_size):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
 
-    def forward(self, x):
-        return x * self.w
+    # initialize the process group
+    dist.init_process_group("gloo", rank=rank, world_size=world_size)
 
 def main(rank):
-    batch_size = 16
-    lr         = 1e-2
 
-    my_net    = MyNet().to(rank)
-    optimizer = optim.SGD(my_net.parameters(), lr=lr)
-    x         = torch.ones((batch_size, 1), requires_grad=True).to(rank)
-    y         = torch.zeros((batch_size, 1), requires_grad=True).to(rank)
+    world_size = torch.cuda.device_count()
+    setup(rank, world_size=world_size)
 
-    y_hat = my_net(x)
+    my_net    = shared.MyNet().to(rank)
+    optimizer = optim.SGD(my_net.parameters(), lr=shared.lr)
 
-    loss  = nn.L1Loss()(y, y_hat)
-    loss.backward()
+    ddp_net   = DDP(my_net, device_ids=[rank])
 
-    print("rank:", rank, " loss:            ", loss)
-    print("rank:", rank, " my_net.w.grad:   ", my_net.w.grad)
-    print("rank:", rank, " my_net.w:        ", my_net.w.data)
+    dataset     = shared.MyDataset()
+    datasampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank)
+    dataloader  = DataLoader(dataset, batch_size=shared.batch_size, sampler=datasampler)
 
-    optimizer.step()
+    for x, y in dataloader:
 
-    print("rank:", rank, " my_net.w:        ", my_net.w.data)
+        x, y = x.to(rank), y.to(rank)
 
+        y_hat = my_net(x)
+
+        loss  = nn.L1Loss()(y, y_hat)
+        loss.backward()
+
+        optimizer.step()
+
+    print("rank:", rank, "my_net.w: ", my_net.w.data)
 
 if __name__ == "__main__":
     mp.spawn(main, args=(), nprocs=torch.cuda.device_count(), join=True)
