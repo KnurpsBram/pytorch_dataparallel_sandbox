@@ -59,8 +59,15 @@ def main(rank, args):
 
     dist.barrier()
 
-    if rank != 0:
-        print(grads)
+    print(rank)
+    print(grads)
+    dist.send(tensor = torch.cat(grads), dst=0)
+
+    if rank == 0:
+        for i in range(world_size):
+            dist.recv(tensor=tensor, src=i)
+            print(rank)
+            print(tensor)
 
     if rank == 0: # the net will have the same weights on all gpu's, so we only need to print one of them
 
