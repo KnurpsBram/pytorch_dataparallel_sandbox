@@ -27,6 +27,7 @@ def main(rank, args):
     setup(rank, world_size=world_size)
 
     grads = []
+    params_after_training = []
     for _ in range(args.n_experiments):
 
         my_net    = shared.MyNet().to(rank)
@@ -54,8 +55,10 @@ def main(rank, args):
 
                 optimizer.step()
 
+        params_after_training.append(my_net.w.data.clone())
+
     if rank == 0: # the net will have the same weights on all gpu's, so we only need to print one of them
-        print("my_net.w:        ", my_net.w.data.squeeze())
+        print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
         print("grad variance:   ", torch.std(torch.cat(grads)).squeeze()**2)
 
 if __name__ == "__main__":

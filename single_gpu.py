@@ -11,6 +11,7 @@ import shared
 def main(args, rank=0):
 
     grads = []
+    params_after_training = []
     for _ in range(args.n_experiments):
 
         my_net    = shared.MyNet().to(rank)
@@ -35,7 +36,9 @@ def main(args, rank=0):
 
                 optimizer.step()
 
-    print("my_net.w:        ", my_net.w.data.squeeze())
+        params_after_training.append(my_net.w.data.clone())
+
+    print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
     print("grad variance:   ", torch.std(torch.cat(grads)).squeeze()**2)
 
 if __name__ == "__main__":
