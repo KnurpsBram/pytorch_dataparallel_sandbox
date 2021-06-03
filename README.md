@@ -2,4 +2,4 @@
 How does nn.DistributedDataParallell work? How should I change my learning rate to account for it? This repo may help you try some stuff out.
 
 ### Some Experiments
-The following experiment was run on an 8-gpu machine.
+The following experiments were run on an 8-gpu machine.

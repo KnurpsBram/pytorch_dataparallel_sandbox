@@ -10,7 +10,7 @@ import shared
 
 def main(args, rank=0):
 
-    grads = []
+    update_steps = []
     params_after_training = []
     for _ in range(args.n_experiments):
 
@@ -32,14 +32,14 @@ def main(args, rank=0):
                 loss  = nn.L1Loss()(y, y_hat)
                 loss.backward()
 
-                grads.append(my_net.w.grad.clone())
+                update_steps.append(args.lr * my_net.w.grad.clone())
 
                 optimizer.step()
 
         params_after_training.append(my_net.w.data.clone())
 
-    print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
-    print("grad variance:   ", torch.std(torch.cat(grads)).squeeze()**2)
+    print("my_net.w:             ", torch.mean(torch.cat(params_after_training)))
+    print("update step variance: ", torch.std(torch.cat(update_steps)).squeeze()**2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

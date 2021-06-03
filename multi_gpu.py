@@ -26,7 +26,7 @@ def main(rank, args):
 
     setup(rank, world_size=WORLD_SIZE)
 
-    grads = []
+    update_steps = []
     params_after_training = []
     for _ in range(args.n_experiments):
 
@@ -58,15 +58,15 @@ def main(rank, args):
                 else:
                     gathered_grads = [torch.zeros_like(grad) for _ in range(WORLD_SIZE)]
                     dist.gather(grad, gathered_grads, dst=0)
-                    grads.append(torch.mean(torch.cat(gathered_grads)))
+                    update_steps.append(args.lr * torch.mean(torch.cat(gathered_grads)))
 
                 optimizer.step()
 
         params_after_training.append(my_net.w.data.clone())
 
     if rank == 0:
-        print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
-        print("grad variance:   ", torch.std(torch.cat([grad.unsqueeze(0) for grad in grads])).squeeze()**2)
+        print("my_net.w:             ", torch.mean(torch.cat(params_after_training)))
+        print("update step variance: ", torch.std(torch.cat([x.unsqueeze(0) for x in update_steps])).squeeze()**2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
