@@ -57,24 +57,23 @@ def main(rank, args):
 
         params_after_training.append(my_net.w.data.clone())
 
-    dist.barrier()
 
     tensor = torch.cat(grads)
 
-    # print(rank)
-    # print(grads)
+    req = None
     if rank != 0:
         print("rank", rank, "is sending tensor....")
-        dist.send(tensor = tensor, dst=0)
+        req = dist.isend(tensor = tensor, dst=0)
 
     if rank == 0:
         for i in range(1, world_size):
             print("rank", rank, "is trying to receive tensor from rank", i)
-            dist.recv(tensor = tensor, src=i)
+            req = dist.irecv(tensor = tensor, src=i)
             print(rank)
             print(tensor)
 
-    dist.barrier()
+    req.wait()
+
 
     if rank == 0: # the net will have the same weights on all gpu's, so we only need to print one of them
 
