@@ -13,18 +13,18 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 import shared
 
-world_size = torch.cuda.device_count()
+WORLD_SIZE = torch.cuda.device_count()
 
 def setup(rank, world_size):
-    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '12355'
 
     # initialize the process group
-    dist.init_process_group("gloo", rank=rank, world_size=world_size)
+    dist.init_process_group("gloo", rank=rank, world_size=WORLD_SIZE)
 
 def main(rank, args):
 
-    setup(rank, world_size=world_size)
+    setup(rank, world_size=WORLD_SIZE)
 
     grads = []
     params_after_training = []
@@ -36,7 +36,7 @@ def main(rank, args):
         ddp_net   = DDP(my_net, device_ids=[rank])
 
         dataset     = shared.MyDataset(deterministic=args.deterministic)
-        datasampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank)
+        datasampler = DistributedSampler(dataset, num_replicas=WORLD_SIZE, rank=rank)
         dataloader  = DataLoader(dataset, batch_size=args.batch_size, sampler=datasampler)
 
         for _ in range(args.n_epochs):
@@ -59,20 +59,29 @@ def main(rank, args):
 
 
     tensor = torch.cat(grads)
+    #
+    # req = None
+    # if rank != 0:
+    #     print("rank", rank, "is sending tensor....")
+    #     req = dist.isend(tensor = tensor, dst=0)
+    #
+    # if rank == 0:
+    #     for i in range(1, WORLD_SIZE):
+    #         print("rank", rank, "is trying to receive tensor from rank", i)
+    #         req = dist.irecv(tensor = tensor, src=i)
+    #         print(rank)
+    #         print(tensor)
 
-    req = None
-    if rank != 0:
-        print("rank", rank, "is sending tensor....")
-        req = dist.isend(tensor = tensor, dst=0)
+    # req.wait()
 
     if rank == 0:
-        for i in range(1, world_size):
-            print("rank", rank, "is trying to receive tensor from rank", i)
-            req = dist.irecv(tensor = tensor, src=i)
-            print(rank)
-            print(tensor)
+        # rank 0 is the node all tensors will be gathered on
+        gathered_tensors = [torch.zeros_like(tensor) for _ in range(WORLD_SIZE)]
+        dist.gather(tensor, gathered_tensors, dst=0)
+    else:
+        dist.gather(tensor, dst=0)
 
-    req.wait()
+    print(tensor)
 
 
     if rank == 0: # the net will have the same weights on all gpu's, so we only need to print one of them
@@ -94,6 +103,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    print("World Size: ", world_size)
+    print("World Size: ", WORLD_SIZE)
 
-    mp.spawn(main, args=(args,), nprocs=world_size, join=True)
+    mp.spawn(main, args=(args,), nprocs=WORLD_SIZE, join=True)
