@@ -38,6 +38,8 @@ def main(rank, args):
     for _ in range(args.n_epochs):
         for x, y in dataloader:
 
+            optimizer.zero_grad()
+
             x, y = x.to(rank), y.to(rank)
 
             y_hat = my_net(x)
@@ -53,9 +55,10 @@ def main(rank, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--batch_size", type=int,   default=16)
-    parser.add_argument("--lr",         type=float, default=1e-4)
-    parser.add_argument("--n_epochs",   type=int,   default=1)
+    parser.add_argument("--batch_size",    type=int,                default=16)
+    parser.add_argument("--lr",            type=float,              default=1e-4)
+    parser.add_argument("--n_epochs",      type=int,                default=1)
+    parser.add_argument("--deterministic", type=shared.str_to_bool, default=True)
 
     args = parser.parse_args()
 
