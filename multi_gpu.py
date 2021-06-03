@@ -73,6 +73,9 @@ def main(rank, args):
         # grads = torch.cat(gathered_tensors)
 
     if rank == 0:
+
+        print(grads)
+
         print("n_grads", len(grads))
 
         print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
