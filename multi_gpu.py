@@ -26,31 +26,37 @@ def main(rank, args):
 
     setup(rank, world_size=world_size)
 
-    my_net    = shared.MyNet().to(rank)
-    optimizer = optim.SGD(my_net.parameters(), lr=args.lr)
+    grads = []
+    for _ in range(args.n_experiments):
 
-    ddp_net   = DDP(my_net, device_ids=[rank])
+        my_net    = shared.MyNet().to(rank)
+        optimizer = optim.SGD(my_net.parameters(), lr=args.lr)
 
-    dataset     = shared.MyDataset()
-    datasampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank)
-    dataloader  = DataLoader(dataset, batch_size=args.batch_size, sampler=datasampler)
+        ddp_net   = DDP(my_net, device_ids=[rank])
 
-    for _ in range(args.n_epochs):
-        for x, y in dataloader:
+        dataset     = shared.MyDataset()
+        datasampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank)
+        dataloader  = DataLoader(dataset, batch_size=args.batch_size, sampler=datasampler)
 
-            optimizer.zero_grad()
+        for _ in range(args.n_epochs):
+            for x, y in dataloader:
 
-            x, y = x.to(rank), y.to(rank)
+                optimizer.zero_grad()
 
-            y_hat = my_net(x)
+                x, y = x.to(rank), y.to(rank)
 
-            loss  = nn.L1Loss()(y, y_hat)
-            loss.backward()
+                y_hat = my_net(x)
 
-            optimizer.step()
+                loss  = nn.L1Loss()(y, y_hat)
+                loss.backward()
+
+                grads.append(my_net.w.grad.clone())
+
+                optimizer.step()
 
     if rank == 0: # the net will have the same weights on all gpu's, so we only need to print one of them
-        print("my_net.w: ", my_net.w.data)
+        print("my_net.w:        ", my_net.w.data.squeeze())
+        print("grad variance:   ", torch.std(torch.cat(grads)).squeeze()**2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -59,7 +65,10 @@ if __name__ == "__main__":
     parser.add_argument("--lr",            type=float,              default=1e-4)
     parser.add_argument("--n_epochs",      type=int,                default=1)
     parser.add_argument("--deterministic", type=shared.str_to_bool, default=True)
+    parser.add_argument("--n_experiments", type=int,                default=1)
 
     args = parser.parse_args()
+
+    print("World Size: ", world_size)
 
     mp.spawn(main, args=(args,), nprocs=world_size, join=True)

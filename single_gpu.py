@@ -10,28 +10,33 @@ import shared
 
 def main(args, rank=0):
 
-    # for _ in range(args.n_experiments):
-    my_net    = shared.MyNet().to(rank)
-    optimizer = optim.SGD(my_net.parameters(), lr=args.lr)
+    grads = []
+    for _ in range(args.n_experiments):
 
-    dataset    = shared.MyDataset()
-    dataloader = DataLoader(dataset, batch_size=args.batch_size)
+        my_net    = shared.MyNet().to(rank)
+        optimizer = optim.SGD(my_net.parameters(), lr=args.lr)
 
-    for _ in range(args.n_epochs):
-        for x, y in dataloader:
+        dataset    = shared.MyDataset(deterministic=args.deterministic)
+        dataloader = DataLoader(dataset, batch_size=args.batch_size)
 
-            optimizer.zero_grad()
+        for _ in range(args.n_epochs):
+            for x, y in dataloader:
 
-            x, y = x.to(rank), y.to(rank)
+                optimizer.zero_grad()
 
-            y_hat = my_net(x)
+                x, y = x.to(rank), y.to(rank)
 
-            loss  = nn.L1Loss()(y, y_hat)
-            loss.backward()
+                y_hat = my_net(x)
 
-            optimizer.step()
+                loss  = nn.L1Loss()(y, y_hat)
+                loss.backward()
 
-        print("my_net.w: ", my_net.w.data)
+                grads.append(my_net.w.grad.clone())
+
+                optimizer.step()
+
+    print("my_net.w:        ", my_net.w.data.squeeze())
+    print("grad variance:   ", torch.std(torch.cat(grads)).squeeze()**2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -40,7 +45,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr",            type=float,              default=1e-4)
     parser.add_argument("--n_epochs",      type=int,                default=1)
     parser.add_argument("--deterministic", type=shared.str_to_bool, default=True)
-    # parser.add_argument("--n_experiments", type=int,                default=1)
+    parser.add_argument("--n_experiments", type=int,                default=1)
 
     args = parser.parse_args()
 
