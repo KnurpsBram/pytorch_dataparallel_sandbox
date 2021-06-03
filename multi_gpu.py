@@ -57,17 +57,15 @@ def main(rank, args):
 
         params_after_training.append(my_net.w.data.clone())
 
-    tensor = torch.cat(grads)
+    grads = torch.cat(grads)
 
     # the net will have the same weights on all gpu's, so we only need to print one of them
     if rank != 0:
-        dist.gather(tensor, dst=0)
+        dist.gather(grads, dst=0)
     else:
-        gathered_tensors = [torch.zeros_like(tensor) for _ in range(WORLD_SIZE)]
-        dist.gather(tensor, gathered_tensors, dst=0)
-        gathered_tensors = torch.cat(gathered_tensors)
-
-        print(gathered_tensors)
+        gathered_tensors = [torch.zeros_like(grads) for _ in range(WORLD_SIZE)]
+        dist.gather(grads, gathered_tensors, dst=0)
+        grads = torch.cat(gathered_tensors)
 
         print("n_grads", len(grads))
 
