@@ -59,12 +59,14 @@ def main(rank, args):
 
     dist.barrier()
 
-    print(rank)
-    print(grads)
+    # print(rank)
+    # print(grads)
     if rank != 0:
         tensor = torch.cat(grads)
         dist.send(tensor = tensor, dst=0)
 
+    dist.barrier()
+    
     if rank == 0:
         for i in range(1, world_size):
             tensor = torch.zeros(1)
