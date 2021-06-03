@@ -8,8 +8,8 @@ from torch.utils.data import DataLoader
 
 import shared
 
-def main(args):
-    my_net    = shared.MyNet()
+def main(args, rank=0):
+    my_net    = shared.MyNet().to(rank)
     optimizer = optim.SGD(my_net.parameters(), lr=args.lr)
 
     dataset    = shared.MyDataset()
@@ -18,6 +18,8 @@ def main(args):
     for _ in range(args.n_epochs):
         for x, y in dataloader:
 
+            x, y = x.to(rank), y.to(rank)
+            
             y_hat = my_net(x)
 
             loss  = nn.L1Loss()(y, y_hat)
