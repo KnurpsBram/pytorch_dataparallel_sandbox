@@ -15,25 +15,26 @@ def main(args):
     dataset    = shared.MyDataset()
     dataloader = DataLoader(dataset, batch_size=args.batch_size)
 
-    for x, y in dataloader:
+    for _ in args.n_epochs:
+        for x, y in dataloader:
 
-        y_hat = my_net(x)
+            y_hat = my_net(x)
 
-        print(x.shape)
+            loss  = nn.L1Loss()(y, y_hat)
+            loss.backward()
 
-        loss  = nn.L1Loss()(y, y_hat)
-        loss.backward()
-
-        optimizer.step()
+            optimizer.step()
 
     print("my_net.w: ", my_net.w.data)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--batch_size", type=int,   default=16)
+    parser.add_argument("--lr",         type=float, default=1e-4)
+    parser.add_argument("--n_epochs",   type=int,   default=1)
 
     args = parser.parse_args()
+
 
     main(args)
