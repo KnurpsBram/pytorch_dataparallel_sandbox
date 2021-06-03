@@ -59,16 +59,16 @@ def main(rank, args):
 
     dist.barrier()
 
+    tensor = torch.cat(grads)
+
     # print(rank)
     # print(grads)
     if rank != 0:
-        tensor = torch.cat(grads)
         print("rank", rank, "is sending tensor....")
         dist.send(tensor = tensor, dst=0)
 
     if rank == 0:
         for i in range(1, world_size):
-            tensor = torch.zeros_like(grads)
             print("rank", rank, "is trying to receive tensor from rank", i)
             dist.recv(tensor = tensor, src=i)
             print(rank)
