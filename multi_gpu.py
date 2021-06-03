@@ -51,22 +51,28 @@ def main(rank, args):
                 loss  = nn.L1Loss()(y, y_hat)
                 loss.backward()
 
-                grads.append(my_net.w.grad.clone())
+                grad = my_net.w.grad.clone()
+
+                if rank != 0:
+                    dist.gather(grad, dst=0)
+                else:
+                    gathered_grads = [torch.zeros(1) for _ in range(WORLD_SIZE)]
+                    dist.gather(grad, gathered_grads, dst=0)
+                    grads.append(torch.mean(torch.cat(gathered_grads)))
 
                 optimizer.step()
 
         params_after_training.append(my_net.w.data.clone())
 
-    grads = torch.cat(grads)
-
     # the net will have the same weights on all gpu's, so we only need to print one of them
-    if rank != 0:
-        dist.gather(grads, dst=0)
-    else:
-        gathered_tensors = [torch.zeros_like(grads) for _ in range(WORLD_SIZE)]
-        dist.gather(grads, gathered_tensors, dst=0)
-        grads = torch.cat(gathered_tensors)
+    # if rank != 0:
+        # dist.gather(grads, dst=0)
+    # else:
+        # gathered_tensors = [torch.zeros_like(grads) for _ in range(WORLD_SIZE)]
+        # dist.gather(grads, gathered_tensors, dst=0)
+        # grads = torch.cat(gathered_tensors)
 
+    if rank != 0:
         print("n_grads", len(grads))
 
         print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
