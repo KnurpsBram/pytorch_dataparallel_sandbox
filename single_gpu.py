@@ -38,8 +38,6 @@ def main(args, rank=0):
 
         params_after_training.append(my_net.w.data.clone())
 
-    print("n_grads", len(grads))
-
     print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
     print("grad variance:   ", torch.std(torch.cat(grads)).squeeze()**2)
 
