@@ -65,7 +65,8 @@ def main(rank, args):
     else:
         gathered_tensors = [torch.zeros_like(tensor) for _ in range(WORLD_SIZE)]
         dist.gather(tensor, gathered_tensors, dst=0)
-
+        gathered_tensors = torch.cat(gathered_tensors)
+        
         print(gathered_tensors)
 
         print("n_grads", len(grads))
