@@ -70,7 +70,7 @@ def main(rank, args):
         print("n_grads", len(grads))
 
         print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
-        print("grad variance:   ", torch.std(gathered_tensors).squeeze()**2)
+        print("grad variance:   ", torch.std(grads).squeeze()**2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
