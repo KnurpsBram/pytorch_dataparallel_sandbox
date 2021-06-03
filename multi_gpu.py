@@ -34,7 +34,7 @@ def main(rank, args):
 
         ddp_net   = DDP(my_net, device_ids=[rank])
 
-        dataset     = shared.MyDataset()
+        dataset     = shared.MyDataset(deterministic=args.deterministic)
         datasampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank)
         dataloader  = DataLoader(dataset, batch_size=args.batch_size, sampler=datasampler)
 
