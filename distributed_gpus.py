@@ -1,4 +1,5 @@
 import os
+import argparse
 
 import torch
 import torch.nn as nn
@@ -12,8 +13,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 import shared
 
-# world_size = torch.cuda.device_count()
-world_size = 2
+world_size = torch.cuda.device_count()
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'
@@ -22,18 +22,18 @@ def setup(rank, world_size):
     # initialize the process group
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
 
-def main(rank):
+def main(rank, args):
 
     setup(rank, world_size=world_size)
 
     my_net    = shared.MyNet().to(rank)
-    optimizer = optim.SGD(my_net.parameters(), lr=shared.lr)
+    optimizer = optim.SGD(my_net.parameters(), lr=args.lr)
 
     ddp_net   = DDP(my_net, device_ids=[rank])
 
     dataset     = shared.MyDataset()
     datasampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank)
-    dataloader  = DataLoader(dataset, batch_size=shared.batch_size, sampler=datasampler)
+    dataloader  = DataLoader(dataset, batch_size=args.batch_size, sampler=datasampler)
 
     for x, y in dataloader:
 
@@ -49,4 +49,11 @@ def main(rank):
     print("rank:", rank, "my_net.w: ", my_net.w.data)
 
 if __name__ == "__main__":
-    mp.spawn(main, args=(), nprocs=world_size, join=True)
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--lr", type=float, default=1e-4)
+
+    args = parser.parse_args()
+
+    mp.spawn(main, args=(args,), nprocs=world_size, join=True)

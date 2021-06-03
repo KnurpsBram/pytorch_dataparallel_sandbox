@@ -4,9 +4,6 @@ import torch.optim as optim
 
 from torch.utils.data import Dataset
 
-batch_size = 16
-lr         = 1e-4
-
 class MyNet(nn.Module):
     def __init__(self):
         super(MyNet, self).__init__()

@@ -1,3 +1,5 @@
+import argparse
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -6,12 +8,12 @@ from torch.utils.data import DataLoader
 
 import shared
 
-def main():
+def main(args):
     my_net    = shared.MyNet()
-    optimizer = optim.SGD(my_net.parameters(), lr=shared.lr)
+    optimizer = optim.SGD(my_net.parameters(), lr=args.lr)
 
     dataset    = shared.MyDataset()
-    dataloader = DataLoader(dataset, batch_size=shared.batch_size)
+    dataloader = DataLoader(dataset, batch_size=args.batch_size)
 
     for x, y in dataloader:
 
@@ -25,4 +27,11 @@ def main():
     print("my_net.w: ", my_net.w.data)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--lr", type=float, default=1e-4)
+
+    args = parser.parse_args()
+
+    main(args)
