@@ -61,10 +61,12 @@ def main(rank, args):
 
     print(rank)
     print(grads)
-    dist.send(tensor = torch.cat(grads), dst=0)
+    if rank != 0:
+        tensor = torch.cat(grads)
+        dist.send(tensor = tensor, dst=0)
 
     if rank == 0:
-        for i in range(world_size):
+        for i in range(1, world_size):
             dist.recv(tensor=tensor, src=i)
             print(rank)
             print(tensor)
