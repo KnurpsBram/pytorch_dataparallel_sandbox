@@ -57,40 +57,21 @@ def main(rank, args):
 
         params_after_training.append(my_net.w.data.clone())
 
-
     tensor = torch.cat(grads)
-    #
-    # req = None
-    # if rank != 0:
-    #     print("rank", rank, "is sending tensor....")
-    #     req = dist.isend(tensor = tensor, dst=0)
-    #
-    # if rank == 0:
-    #     for i in range(1, WORLD_SIZE):
-    #         print("rank", rank, "is trying to receive tensor from rank", i)
-    #         req = dist.irecv(tensor = tensor, src=i)
-    #         print(rank)
-    #         print(tensor)
 
-    # req.wait()
-
-    if rank == 0:
-        # rank 0 is the node all tensors will be gathered on
+    # the net will have the same weights on all gpu's, so we only need to print one of them
+    if rank != 0:
+        dist.gather(tensor, dst=0)
+    else:
         gathered_tensors = [torch.zeros_like(tensor) for _ in range(WORLD_SIZE)]
         dist.gather(tensor, gathered_tensors, dst=0)
-    else:
-        dist.gather(tensor, dst=0)
 
-    print(gathered_tensors)
-
-
-    if rank == 0: # the net will have the same weights on all gpu's, so we only need to print one of them
-
+        print(gathered_tensors)
 
         print("n_grads", len(grads))
 
         print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
-        print("grad variance:   ", torch.std(torch.cat(grads)).squeeze()**2)
+        print("grad variance:   ", torch.std(torch.cat(gathered_tensors)).squeeze()**2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
