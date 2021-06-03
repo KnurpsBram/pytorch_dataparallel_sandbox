@@ -35,7 +35,7 @@ def main(rank, args):
     datasampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank)
     dataloader  = DataLoader(dataset, batch_size=args.batch_size, sampler=datasampler)
 
-    for _ in args.n_epochs:
+    for _ in range(args.n_epochs):
         for x, y in dataloader:
 
             x, y = x.to(rank), y.to(rank)

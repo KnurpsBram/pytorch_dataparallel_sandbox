@@ -15,7 +15,7 @@ def main(args):
     dataset    = shared.MyDataset()
     dataloader = DataLoader(dataset, batch_size=args.batch_size)
 
-    for _ in args.n_epochs:
+    for _ in range(args.n_epochs):
         for x, y in dataloader:
 
             y_hat = my_net(x)
