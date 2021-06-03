@@ -67,6 +67,7 @@ def main(rank, args):
 
     if rank == 0:
         for i in range(1, world_size):
+            tensor = torch.zeros(1)
             dist.recv(tensor=tensor, src=i)
             print(rank)
             print(tensor)
