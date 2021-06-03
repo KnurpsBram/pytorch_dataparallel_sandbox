@@ -47,7 +47,8 @@ def main(rank, args):
 
             optimizer.step()
 
-    print("rank:", rank, "my_net.w: ", my_net.w.data)
+    if rank == 0: # the net will have the same weights on all gpu's, so we only need to print one of them
+        print("my_net.w: ", my_net.w.data)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
