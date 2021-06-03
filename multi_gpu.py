@@ -66,13 +66,13 @@ def main(rank, args):
         gathered_tensors = [torch.zeros_like(tensor) for _ in range(WORLD_SIZE)]
         dist.gather(tensor, gathered_tensors, dst=0)
         gathered_tensors = torch.cat(gathered_tensors)
-        
+
         print(gathered_tensors)
 
         print("n_grads", len(grads))
 
         print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
-        print("grad variance:   ", torch.std(torch.cat(gathered_tensors)).squeeze()**2)
+        print("grad variance:   ", torch.std(gathered_tensors).squeeze()**2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
