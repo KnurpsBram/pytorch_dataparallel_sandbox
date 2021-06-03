@@ -81,7 +81,7 @@ def main(rank, args):
     else:
         dist.gather(tensor, dst=0)
 
-    print(tensor)
+    print(gathered_tensors)
 
 
     if rank == 0: # the net will have the same weights on all gpu's, so we only need to print one of them
