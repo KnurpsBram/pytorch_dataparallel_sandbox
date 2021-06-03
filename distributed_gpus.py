@@ -39,6 +39,8 @@ def main(rank, args):
 
         x, y = x.to(rank), y.to(rank)
 
+        print(x.shape)
+
         y_hat = my_net(x)
 
         loss  = nn.L1Loss()(y, y_hat)

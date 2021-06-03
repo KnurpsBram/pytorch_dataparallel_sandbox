@@ -19,6 +19,8 @@ def main(args):
 
         y_hat = my_net(x)
 
+        print(x.shape)
+
         loss  = nn.L1Loss()(y, y_hat)
         loss.backward()
 
