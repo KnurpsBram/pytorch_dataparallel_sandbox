@@ -57,6 +57,9 @@ def main(rank, args):
 
         params_after_training.append(my_net.w.data.clone())
 
+    if rank != 0:
+        print(grads)
+
     if rank == 0: # the net will have the same weights on all gpu's, so we only need to print one of them
 
         print("n_grads", len(grads))
