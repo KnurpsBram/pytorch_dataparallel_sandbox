@@ -51,8 +51,8 @@ def main(rank, args):
                 loss  = nn.L1Loss()(y, y_hat)
                 loss.backward()
 
+                # DDP will apply the mean of grads over all gpus, we mimic that mean here in order to get the grad that optim truly applies.
                 grad = my_net.w.grad.clone()
-
                 if rank != 0:
                     dist.gather(grad, dst=0)
                 else:
@@ -64,20 +64,7 @@ def main(rank, args):
 
         params_after_training.append(my_net.w.data.clone())
 
-    # the net will have the same weights on all gpu's, so we only need to print one of them
-    # if rank != 0:
-        # dist.gather(grads, dst=0)
-    # else:
-        # gathered_tensors = [torch.zeros_like(grads) for _ in range(WORLD_SIZE)]
-        # dist.gather(grads, gathered_tensors, dst=0)
-        # grads = torch.cat(gathered_tensors)
-
     if rank == 0:
-
-        print(grads)
-
-        print("n_grads", len(grads))
-
         print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
         print("grad variance:   ", torch.std(torch.cat([grad.unsqueeze(0) for grad in grads])).squeeze()**2)
 
