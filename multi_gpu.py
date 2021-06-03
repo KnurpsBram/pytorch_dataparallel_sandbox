@@ -58,7 +58,7 @@ def main(rank, args):
                 else:
                     gathered_grads = [torch.zeros_like(grad) for _ in range(WORLD_SIZE)]
                     dist.gather(grad, gathered_grads, dst=0)
-                    grads.append(torch.mean(torch.cat(gathered_grads)))
+                    grads.append(torch.mean(torch.cat(gathered_grads), keepdim=True))
 
                 optimizer.step()
 
@@ -79,7 +79,7 @@ def main(rank, args):
         print("n_grads", len(grads))
 
         print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
-        print("grad variance:   ", torch.std(grads).squeeze()**2)
+        print("grad variance:   ", torch.std(torch.cat(grads)).squeeze()**2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
