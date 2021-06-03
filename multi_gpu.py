@@ -56,7 +56,7 @@ def main(rank, args):
                 if rank != 0:
                     dist.gather(grad, dst=0)
                 else:
-                    gathered_grads = [torch.zeros(1) for _ in range(WORLD_SIZE)]
+                    gathered_grads = [torch.zeros_like(grad) for _ in range(WORLD_SIZE)]
                     dist.gather(grad, gathered_grads, dst=0)
                     grads.append(torch.mean(torch.cat(gathered_grads)))
 
@@ -72,11 +72,11 @@ def main(rank, args):
         # dist.gather(grads, gathered_tensors, dst=0)
         # grads = torch.cat(gathered_tensors)
 
-    if rank != 0:
+    if rank == 0:
         print("n_grads", len(grads))
 
         print("my_net.w:        ", torch.mean(torch.cat(params_after_training)))
-        print("grad variance:   ", torch.std(grads).squeeze()**2)
+        print("grad variance:   ", torch.std(torch.cat(grads)).squeeze()**2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
